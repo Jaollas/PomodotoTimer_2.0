@@ -122,14 +122,13 @@ export const useTimer = (initialDurations: Durations) => {
             };
             playSound();
 
-            // Log session to Supabase if it was a focus session
             if (state.mode === 'focus' && user) {
                 const saveSession = async () => {
                     const { error } = await supabase.from('sessions').insert([
                         {
                             user_id: user.id,
                             mode: 'focus',
-                            duration: state.durations.focus,
+                            duration_minutes: state.durations.focus,
                         },
                     ]);
                     if (error) console.error('Error saving session:', error);

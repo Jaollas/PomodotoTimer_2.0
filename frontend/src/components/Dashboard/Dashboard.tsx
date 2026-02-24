@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { LayoutDashboard, Clock, Flame, Calendar, LogOut, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Clock, Flame, Calendar, LogOut, Loader2, Timer, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { NavLink } from 'react-router-dom';
 import axios from 'axios';
 
 const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{ name: string; minutes: number }[]>([]);
   const [streak, setStreak] = useState(0);
@@ -19,21 +22,19 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         const response = await axios.get(`http://localhost:8000/analytics/${user.id}`);
 
-        setStreak(response.data.current_daily_streak);
+        setStreak(response.data.current_streak);
 
-        if (response.data.daily_stats) {
-          setData(response.data.daily_stats);
-        } else {
-          setData([
-            { name: 'Seg', minutes: Math.floor(Math.random() * 60) },
-            { name: 'Ter', minutes: Math.floor(Math.random() * 60) },
-            { name: 'Qua', minutes: Math.floor(Math.random() * 60) },
-            { name: 'Qui', minutes: Math.floor(Math.random() * 60) },
-            { name: 'Sex', minutes: Math.floor(Math.random() * 60) },
-            { name: 'Sab', minutes: Math.floor(Math.random() * 60) },
-            { name: 'Dom', minutes: Math.floor(Math.random() * 60) },
-          ]);
-        }
+        const chartData = [
+          { name: 'Dom', fullName: 'Domingo', minutes: response.data.sunday_focus_minutes },
+          { name: 'Seg', fullName: 'Segunda-Feira', minutes: response.data.monday_focus_minutes },
+          { name: 'Ter', fullName: 'Terça-Feira', minutes: response.data.tuesday_focus_minutes },
+          { name: 'Qua', fullName: 'Quarta-Feira', minutes: response.data.wednesday_focus_minutes },
+          { name: 'Qui', fullName: 'Quinta-Feira', minutes: response.data.thursday_focus_minutes },
+          { name: 'Sex', fullName: 'Sexta-Feira', minutes: response.data.friday_focus_minutes },
+          { name: 'Sáb', fullName: 'Sábado', minutes: response.data.saturday_focus_minutes },
+        ];
+
+        setData(chartData);
       } catch (err) {
         console.error('Failed to fetch analytics:', err);
         setError('Não foi possível carregar os dados. Verifique se o servidor backend está rodando.');
@@ -54,10 +55,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         <nav className="sidebar-nav">
-          <button className="nav-item active">
+          <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <LayoutDashboard size={20} />
             <span>Dashboard</span>
-          </button>
+          </NavLink>
+          <NavLink to="/" className="nav-item">
+            <Timer size={20} />
+            <span>Timer</span>
+          </NavLink>
           <button className="nav-item">
             <Clock size={20} />
             <span>Sessões</span>
@@ -69,6 +74,10 @@ const Dashboard: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
+          <button onClick={toggleTheme} className="theme-toggle-btn">
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            <span>{theme === 'light' ? 'Tema Escuro' : 'Tema Claro'}</span>
+          </button>
           <div className="user-info">
             <div className="user-avatar">{user?.email?.[0].toUpperCase()}</div>
             <div className="user-details">
@@ -103,7 +112,7 @@ const Dashboard: React.FC = () => {
             <div className="stats-grid">
               <div className="stat-card">
                 <div className="stat-icon streak">
-                  <Flame size={24} />
+                  <Flame size={29} />
                 </div>
                 <div className="stat-info">
                   <h3>Sequência (Streak)</h3>
@@ -123,20 +132,34 @@ const Dashboard: React.FC = () => {
 
             <div className="charts-grid">
               <div className="chart-card">
-                <h3>Minutos de Foco (Bar Chart)</h3>
+                <h3>Minutos de Foco na Semana</h3>
                 <div className="chart-wrapper">
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={data}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
                       <Tooltip
-                        cursor={{ fill: '#f8fafc' }}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                        cursor={{ fill: 'var(--bg-tertiary)' }}
+                        labelFormatter={(value, payload) => {
+                          if (payload && payload.length > 0) {
+                            return payload[0].payload.fullName;
+                          }
+                          return value;
+                        }}
+                        formatter={(value) => [`${value} min`, 'Minutos de Foco']}
+                        contentStyle={{
+                          borderRadius: '12px',
+                          border: 'none',
+                          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)'
+                        }}
+                        itemStyle={{ color: 'var(--text-primary)' }}
                       />
                       <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
                         {data.map((_entry, index) => (
-                          <Cell key={`cell-${index}`} fill={index === new Date().getDay() - 1 ? '#ef4444' : '#fca5a5'} />
+                          <Cell key={`cell-${index}`} fill={index === new Date().getDay() ? 'var(--focus-color)' : 'var(--sidebar-active-text)'} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -151,30 +174,32 @@ const Dashboard: React.FC = () => {
       <style>{`
         .dashboard-container {
           display: flex;
-          min-height: 100vh;
-          background: #f8fafc;
+          height: 100vh;
+          background: var(--bg-primary);
+          color: var(--text-primary);
+          overflow: hidden;
         }
 
         .dashboard-sidebar {
           width: 260px;
-          background: white;
-          border-right: 1px solid #e2e8f0;
+          background: var(--bg-secondary);
+          border-right: 1px solid var(--border-color);
           display: flex;
           flex-direction: column;
-          padding: 2rem 1.5rem;
+          padding: 1.5rem;
         }
 
         .sidebar-header {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          margin-bottom: 2.5rem;
+          margin-bottom: 2rem;
         }
 
         .logo-icon {
           width: 32px;
           height: 32px;
-          background: #ef4444;
+          background: var(--focus-color);
           color: white;
           border-radius: 8px;
           display: flex;
@@ -186,12 +211,13 @@ const Dashboard: React.FC = () => {
         .sidebar-header h2 {
           font-size: 1.25rem;
           font-family: 'Outfit', sans-serif;
+          color: var(--text-primary);
         }
 
         .sidebar-nav {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.25rem;
           flex: 1;
         }
 
@@ -203,45 +229,66 @@ const Dashboard: React.FC = () => {
           border-radius: 0.75rem;
           border: none;
           background: transparent;
-          color: #64748b;
+          color: var(--text-secondary);
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
+          text-decoration: none;
         }
 
         .nav-item:hover {
-          background: #f1f5f9;
-          color: #1e293b;
+          background: var(--sidebar-hover);
+          color: var(--text-primary);
         }
 
         .nav-item.active {
-          background: #fef2f2;
-          color: #ef4444;
+          background: var(--sidebar-active-bg);
+          color: var(--sidebar-active-text);
         }
 
         .sidebar-footer {
           margin-top: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
           padding-top: 1.5rem;
-          border-top: 1px solid #e2e8f0;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .theme-toggle-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.625rem 1rem;
+          border-radius: 0.75rem;
+          border: 1px solid var(--border-color);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+
+        .theme-toggle-btn:hover {
+          background: var(--border-color);
         }
 
         .user-info {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          margin-bottom: 1rem;
         }
 
         .user-avatar {
           width: 36px;
           height: 36px;
-          background: #e2e8f0;
+          background: var(--bg-tertiary);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
-          color: #475569;
+          color: var(--text-primary);
         }
 
         .user-details {
@@ -252,7 +299,7 @@ const Dashboard: React.FC = () => {
         .user-email {
           font-size: 0.875rem;
           font-weight: 600;
-          color: #1e293b;
+          color: var(--text-primary);
         }
 
         .logout-btn {
@@ -262,9 +309,9 @@ const Dashboard: React.FC = () => {
           gap: 0.75rem;
           padding: 0.625rem;
           border-radius: 0.5rem;
-          border: 1px solid #e2e8f0;
-          background: white;
-          color: #64748b;
+          border: 1px solid var(--border-color);
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
           cursor: pointer;
           font-weight: 500;
         }
@@ -277,53 +324,57 @@ const Dashboard: React.FC = () => {
 
         .dashboard-content {
           flex: 1;
-          padding: 3rem;
+          padding: 2rem;
           overflow-y: auto;
+          display: flex;
+          flex-direction: column;
         }
 
         .content-header {
-          margin-bottom: 2.5rem;
+          margin-bottom: 1.5rem;
         }
 
         .content-header h1 {
-          font-size: 2rem;
+          font-size: 1.75rem;
           font-family: 'Outfit', sans-serif;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
+          color: var(--text-primary);
         }
 
         .content-header p {
-          color: #64748b;
+          color: var(--text-secondary);
+          font-size: 0.9rem;
         }
 
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
         }
 
         .stat-card {
-          background: white;
-          padding: 1.5rem;
+          background: var(--bg-secondary);
+          padding: 1.25rem;
           border-radius: 1.25rem;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--border-color);
           display: flex;
           align-items: center;
           gap: 1rem;
         }
 
         .stat-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
         .stat-icon.focus {
-          background: #fef2f2;
-          color: #ef4444;
+          background: var(--sidebar-active-bg);
+          color: var(--sidebar-active-text);
         }
 
         .stat-icon.streak {
@@ -332,35 +383,46 @@ const Dashboard: React.FC = () => {
         }
 
         .stat-info h3 {
-          font-size: 0.875rem;
-          color: #64748b;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
           font-weight: 500;
+          margin: 0;
         }
 
         .stat-value {
-          font-size: 1.5rem;
+          font-size: 1.25rem;
           font-weight: 700;
-          color: #1e293b;
+          color: var(--text-primary);
+          margin: 0;
         }
 
         .charts-grid {
           display: grid;
           grid-template-columns: 1fr;
           gap: 1.5rem;
+          flex: 1;
         }
 
         .chart-card {
-          background: white;
-          padding: 2rem;
+          background: var(--bg-secondary);
+          padding: 1.5rem;
           border-radius: 1.25rem;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--border-color);
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .chart-card h3 {
-          font-size: 1.125rem;
-          margin-bottom: 2rem;
-          color: #1e293b;
+          font-size: 1rem;
+          margin-bottom: 1rem;
+          color: var(--text-primary);
           font-family: 'Outfit', sans-serif;
+        }
+
+        .chart-wrapper {
+          flex: 1;
+          min-height: 250px;
         }
 
         .loading-state, .error-state {
@@ -368,14 +430,14 @@ const Dashboard: React.FC = () => {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          height: 50vh;
+          height: 100%;
           gap: 1rem;
-          color: #64748b;
+          color: var(--text-secondary);
         }
 
         .retry-btn {
           padding: 0.5rem 1rem;
-          background: #ef4444;
+          background: var(--focus-color);
           color: white;
           border: none;
           border-radius: 0.5rem;

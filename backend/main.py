@@ -31,51 +31,69 @@ async def get_analytics(user_id: str):
         raise HTTPException(status_code=500, detail="Supabase credentials not configured.")
 
     try:
+        now = datetime.now(timezone.utc)
+        # Em Python, weekday() retorna 0 para segunda e 6 para domingo.
+        # Para encontrar o domingo anterior:
+        days_since_sunday = (now.weekday() + 1) % 7
+        start_of_week = (now - timedelta(days=days_since_sunday)).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Buscar sessões da semana atual para o breakdown
         response = supabase.table("sessions") \
+            .select("created_at, duration_minutes") \
+            .eq("user_id", user_id) \
+            .eq("mode", "focus") \
+            .gte("created_at", start_of_week.isoformat()) \
+            .order("created_at", desc=True) \
+            .execute()
+        
+        sessions = response.data
+
+        # Inicializa o breakdown semanal
+        weekly_breakdown = {
+            "sunday_focus_minutes": 0,
+            "monday_focus_minutes": 0,
+            "tuesday_focus_minutes": 0,
+            "wednesday_focus_minutes": 0,
+            "thursday_focus_minutes": 0,
+            "friday_focus_minutes": 0,
+            "saturday_focus_minutes": 0
+        }
+
+        # Mapeia weekday() do Python para os nomes dos campos
+        # Python weekday: 0=Seg, 1=Ter, 2=Qua, 3=Qui, 4=Sex, 5=Sáb, 6=Dom
+        days_map = {
+            6: "sunday_focus_minutes",
+            0: "monday_focus_minutes",
+            1: "tuesday_focus_minutes",
+            2: "wednesday_focus_minutes",
+            3: "thursday_focus_minutes",
+            4: "friday_focus_minutes",
+            5: "saturday_focus_minutes"
+        }
+
+        for s in sessions:
+            created_at = datetime.fromisoformat(s["created_at"].replace("Z", "+00:00"))
+            day_name = days_map[created_at.weekday()]
+            weekly_breakdown[day_name] += s.get("duration_minutes", 25)
+
+        # Cálculo do Streak (precisamos de todas as sessões para ser preciso)
+        streak_response = supabase.table("sessions") \
             .select("created_at") \
             .eq("user_id", user_id) \
             .eq("mode", "focus") \
             .order("created_at", desc=True) \
             .execute()
-
-        sessions = response.data
-        if not sessions:
-            return {
-                "user_id": user_id,
-                "weekly_focus_minutes": 0,
-                "current_streak": 0
-            }
-
-        now = datetime.now(timezone.utc)
-        start_of_week = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        response_with_details = supabase.table("sessions") \
-            .select("created_at, duration") \
-            .eq("user_id", user_id) \
-            .eq("mode", "focus") \
-            .order("created_at", desc=True) \
-            .execute()
-        
-        sessions_with_details = response_with_details.data
-        
-        weekly_minutes = 0
-        for s in sessions_with_details:
-            created_at = datetime.fromisoformat(s["created_at"].replace("Z", "+00:00"))
-            if created_at >= start_of_week:
-                weekly_minutes += s.get("duration", 25)
-            else:
-                break
+        all_sessions = streak_response.data
         distinct_days = sorted({
             datetime.fromisoformat(s["created_at"].replace("Z", "+00:00")).date() 
-            for s in sessions_with_details
+            for s in all_sessions
         }, reverse=True)
 
         streak = 0
         today = now.date()
         
-        if not distinct_days:
-            streak = 0
-        else:
+        if distinct_days:
             check_date = today
             if distinct_days[0] < today - timedelta(days=1):
                 streak = 0
@@ -94,12 +112,10 @@ async def get_analytics(user_id: str):
                     streak += 1
                     check_date -= timedelta(days=1)
                     current_idx += 1
-        
-        print(user_id, weekly_minutes, streak)
 
         return {
             "user_id": user_id,
-            "weekly_focus_minutes": weekly_minutes,
+            **weekly_breakdown,
             "current_streak": streak
         }
 

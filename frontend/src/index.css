@@ -1,18 +1,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@400;700&display=swap');
 
 :root {
-  --bg-color: #f8fafc;
-  --card-bg: rgba(255, 255, 255, 0.8);
-  --text-main: #1e293b;
-  --text-sub: #64748b;
-
+  /* Common Colors */
   --focus-color: #ef4444;
   --short-break-color: #10b981;
   --long-break-color: #6366f1;
+  --transition-speed: 0.3s;
+
+  /* Light Theme Variables */
+  --bg-primary: #e2e8f0;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #cbd5e1;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --border-color: #94a3b8;
+  --card-bg: rgba(241, 245, 249, 0.9);
+  --sidebar-hover: #cbd5e1;
+  --sidebar-active-bg: #fecaca;
+  --sidebar-active-text: #ef4444;
 
   --current-theme: var(--focus-color);
-  --transition-speed: 0.5s;
+  --gradient-start: rgba(255, 255, 255, 0.3);
+  --gradient-end: #e2e8f0;
 }
+
+[data-theme='dark'] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  --card-bg: rgba(30, 41, 59, 0.8);
+  --sidebar-hover: #334155;
+  --sidebar-active-bg: #450a0a;
+  --sidebar-active-text: #fca5a5;
+
+  --gradient-start: rgba(0, 0, 0, 0.4);
+  --gradient-end: #000000;
+}
+
 
 .main-nav {
   position: absolute;
@@ -65,9 +92,9 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  transition: background-color var(--transition-speed);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-speed), color var(--transition-speed);
   overflow-x: hidden;
 }
 
@@ -78,10 +105,12 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.4), transparent),
-    linear-gradient(135deg, var(--current-theme) 0%, #ffffff 100%);
+  background: radial-gradient(circle at top right, var(--gradient-start), transparent),
+    linear-gradient(135deg, var(--current-theme) 0%, var(--gradient-end) 100%);
   background-attachment: fixed;
+  transition: background var(--transition-speed);
 }
+
 
 header h1 {
   font-family: 'Outfit', sans-serif;
@@ -95,18 +124,19 @@ header h1 {
   background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--border-color);
   border-radius: 2rem;
   padding: 3rem;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
   text-align: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .timer-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.2);
 }
 
 .mode-selector {
@@ -206,9 +236,9 @@ header h1 {
 }
 
 .settings-toggle {
-  background: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #1e293b;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 0.875rem 1.5rem;
   border-radius: 1rem;
   cursor: pointer;
@@ -230,12 +260,13 @@ header h1 {
 }
 
 .settings-content {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 1.5rem;
   padding: 2rem;
   margin-top: 1rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   animation: slideDown 0.4s ease forwards;
+  border: 1px solid var(--border-color);
 }
 
 .setting-group {
@@ -247,14 +278,16 @@ header h1 {
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: var(--text-sub);
+  color: var(--text-secondary);
 }
 
 .setting-group input {
   width: 100%;
   padding: 0.75rem;
   border-radius: 0.75rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
   outline: none;
@@ -267,8 +300,8 @@ header h1 {
 
 .btn-save {
   width: 100%;
-  background: var(--text-main);
-  color: white;
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }
 
 footer {
@@ -317,7 +350,7 @@ footer {
 }
 
 .auth-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 1.5rem;
   padding: 2.5rem;
   width: 100%;
@@ -325,6 +358,7 @@ footer {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   text-align: center;
   position: relative;
+  border: 1px solid var(--border-color);
 }
 
 .home-link {

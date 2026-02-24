@@ -9,7 +9,9 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { LayoutDashboard, User } from 'lucide-react';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { LayoutDashboard, User, Sun, Moon } from 'lucide-react';
+
 import './index.css';
 
 const DEFAULT_DURATIONS: Durations = {
@@ -34,6 +36,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const TimerPage: React.FC = () => {
   const { session } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const {
     timeRemaining,
     mode,
@@ -50,6 +53,9 @@ const TimerPage: React.FC = () => {
   return (
     <div className={`app-container mode-${mode}`}>
       <nav className="main-nav">
+        <button onClick={toggleTheme} className="nav-link theme-toggle-btn-timer">
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
         {session ? (
           <Link to="/dashboard" className="nav-link">
             <LayoutDashboard size={20} />
@@ -91,23 +97,26 @@ const TimerPage: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/" element={<TimerPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </Router>
+      <ThemeProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/" element={<TimerPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </Router>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
+
 
 export default App;
