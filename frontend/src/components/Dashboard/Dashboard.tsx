@@ -20,7 +20,8 @@ const Dashboard: React.FC = () => {
 
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:8000/analytics/${user.id}`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const response = await axios.get(`${apiUrl}/analytics/${user.id}`);
 
         setStreak(response.data.current_streak);
 
