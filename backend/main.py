@@ -11,7 +11,7 @@ app = FastAPI(title="Pomodoro Analytics API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,12 +32,9 @@ async def get_analytics(user_id: str):
 
     try:
         now = datetime.now(timezone.utc)
-        # Em Python, weekday() retorna 0 para segunda e 6 para domingo.
-        # Para encontrar o domingo anterior:
         days_since_sunday = (now.weekday() + 1) % 7
         start_of_week = (now - timedelta(days=days_since_sunday)).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Buscar sessões da semana atual para o breakdown
         response = supabase.table("sessions") \
             .select("created_at, duration_minutes") \
             .eq("user_id", user_id) \
@@ -48,7 +45,6 @@ async def get_analytics(user_id: str):
         
         sessions = response.data
 
-        # Inicializa o breakdown semanal
         weekly_breakdown = {
             "sunday_focus_minutes": 0,
             "monday_focus_minutes": 0,
@@ -59,8 +55,6 @@ async def get_analytics(user_id: str):
             "saturday_focus_minutes": 0
         }
 
-        # Mapeia weekday() do Python para os nomes dos campos
-        # Python weekday: 0=Seg, 1=Ter, 2=Qua, 3=Qui, 4=Sex, 5=Sáb, 6=Dom
         days_map = {
             6: "sunday_focus_minutes",
             0: "monday_focus_minutes",
@@ -76,7 +70,6 @@ async def get_analytics(user_id: str):
             day_name = days_map[created_at.weekday()]
             weekly_breakdown[day_name] += s.get("duration_minutes", 25)
 
-        # Cálculo do Streak (precisamos de todas as sessões para ser preciso)
         streak_response = supabase.table("sessions") \
             .select("created_at") \
             .eq("user_id", user_id) \
